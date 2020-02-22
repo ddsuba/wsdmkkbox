@@ -1,0 +1,788 @@
+---
+title: "KKBOX music streaming service subscription prediction"
+author: "David Hu"
+date: "2/16/2018"
+output:
+  ioslides_presentation: default
+  beamer_presentation: default
+  slidy_presentation: default
+---
+
+# Description 
+
+
+https://www.kaggle.com/c/kkbox-churn-prediction-challenge#timeline
+
+The 11th ACM International Conference on Web Search and Data Mining (WSDM 2018) is challenging you to build an algorithm that predicts whether a subscription user will churn using a donated dataset from KKBOX. WSDM (pronounced "wisdom") is one of the the premier conferences on web inspired research involving search and data mining. They're committed to publishing original, high quality papers and presentations, with an emphasis on practical but principled novel models.
+
+For a subscription business, accurately predicting churn is critical to long-term success. Even slight variations in churn can drastically affect profits.
+
+KKBOX is Asia’s leading music streaming service, holding the world’s most comprehensive Asia-Pop music library with over 30 million tracks. They offer a generous, unlimited version of their service to millions of people, supported by advertising and paid subscriptions. This delicate model is dependent on accurately predicting churn of their paid users.
+
+In this competition you’re tasked to build an algorithm that predicts whether a user will churn after their subscription expires. Currently, the company uses survival analysis techniques to determine the residual membership life time for each subscriber. By adopting different methods, KKBOX anticipates they’ll discover new insights to why users leave so they can be proactive in keeping users dancing.
+
+Winners will present their findings at the WSDM conference February 6-8, 2018 in Los Angeles, CA. For more information on the conference, click here.
+
+
+# Evaluation
+
+The evaluation metric for this competition is Log Loss
+
+logloss=−1N∑i=1N(yilog(pi)+(1−yi)log(1−pi))
+
+where N is the number of observations, log is the natural logarithm, yi is the binary target, and pi is the predicted probability that yi equals 1.
+
+Note: the actual submitted predicted probabilities are replaced with max(min(p,1−10−15),10−15)
+
+# Submission File
+
+For each user id (msno) in the test set, you must predict the probability of churn (a number between 0 and 1). The file should contain a header and have the following format:
+
+msno,is_churn
+ugx0CjOMzazClkFzU2xasmDZaoIqOUAZPsH1q0teWCg=,0.5
+zLo9f73nGGT1p21ltZC3ChiRnAVvgibMyazbCxvWPcg=,0.4
+f/NmvEzHfhINFEYZTR05prUdr+E+3+oewvweYz9cCQE=,0.9
+etc.
+
+
+# Data Description
+In this challenge, you are asked to predict whether a user will churn after his/her subscription expires. Specifically, we want to forecast if a user make a new service subscription transaction within 30 days after the current membership expiration date.
+
+KKBOX offers subscription based music streaming service. When users signs up for our service, users can choose to either manual renew or auto-renew the service. Users can actively cancel their membership at any time.
+
+The churn/renewal definition can be tricky due to KKBox's subscription model. Since the majority of KKBox's subscription length is 30 days, a lot of users re-subscribe every month. The key fields to determine churn/renewal are transaction date, membership expiration date, and is_cancel. Note that the is_cancel field indicates whether a user actively cancels a subscription. Subscription cancellation does not imply the user has churned. A user may cancel service subscription due to change of service plans or other reasons. The criteria of "churn" is no new valid service subscription within 30 days after the current membership expires.
+
+UPDATE: As of November 6, 2017, we have refreshed the test data to predict user churn in the month of April, 2017
+
+The training and the test data are selected from users whose membership expire within a certain month. The train data consists of users whose subscription expires within the month of February 2017, and the test data is with users whose subscription expires within the month of March 2017. This means we are looking at user churn or renewal roughly in the month of March 2017 for train set, and the user churn or renewal roughly in the month of April 2017. Train and test sets are split by transaction date, as well as the public and private leaderboard data.
+
+In this dataset, KKBox has included more users behaviors than the ones in train and test datasets, in order to enable participants to explore different user behaviors outside of the train and test sets. For example, a user could actively cancel the subscription, but renew within 30 days.
+
+Tables
+
+train.csv
+
+the train set, containing the user ids and whether they have churned.
+
+msno: user id
+is_churn: This is the target variable. Churn is defined as whether the user did not continue the subscription within 30 days of expiration. is_churn = 1 means churn,is_churn = 0 means renewal.
+train_v2.csv
+
+same format as train.csv, refreshed 11/06/2017, contains the churn data for March, 2017.
+
+sample_submission_zero.csv
+
+the test set, containing the user ids, in the format that we expect you to submit
+
+msno: user id
+is_churn: This is what you will predict. Churn is defined as whether the user did not continue the subscription within 30 days of expiration. is_churn = 1 means churn,is_churn = 0 means renewal.
+sample_submission_v2.csv
+
+same format as sample_submission_zero.csv, refreshed 11/06/2017, contains the test data for April, 2017.
+
+transactions.csv
+
+transactions of users up until 2/28/2017.
+
+msno: user id
+payment_method_id: payment method
+payment_plan_days: length of membership plan in days
+plan_list_price: in New Taiwan Dollar (NTD)
+actual_amount_paid: in New Taiwan Dollar (NTD)
+is_auto_renew
+transaction_date: format %Y%m%d
+membership_expire_date: format %Y%m%d
+is_cancel: whether or not the user canceled the membership in this transaction.
+transactions_v2.csv
+
+same format as transactions.csv, refreshed 11/06/2017, contains the transactions data until 3/31/2017.
+
+user_logs.csv
+
+daily user logs describing listening behaviors of a user. Data collected until 2/28/2017.
+
+msno: user id
+date: format %Y%m%d
+num_25: # of songs played less than 25% of the song length
+num_50: # of songs played between 25% to 50% of the song length
+num_75: # of songs played between 50% to 75% of of the song length
+num_985: # of songs played between 75% to 98.5% of the song length
+num_100: # of songs played over 98.5% of the song length
+num_unq: # of unique songs played
+total_secs: total seconds played
+user_logs_v2.csv
+
+same format as user_logs.csv, refreshed 11/06/2017, contains the user logs data until 3/31/2017.
+
+members.csv
+
+user information. Note that not every user in the dataset is available.
+
+msno
+city
+bd: age. Note: this column has outlier values ranging from -7000 to 2015, please use your judgement.
+gender
+registered_via: registration method
+registration_init_time: format %Y%m%d
+expiration_date: format %Y%m%d, taken as a snapshot at which the member.csv is extracted. Not representing the actual churn behavior.
+members_v3.csv
+
+Refreshed 11/13/2017, replaces members.csv data with the expiration date data removed.
+
+Data Extraction Details
+
+We include the code "WSDMChurnLabeller.scala" for generating labels for the user of our interest. The code provided is the one we used to generate the label for the test data set. Note that the date values in the script is modified so it is easier to run on personal laptops. On our cluster, the log history starts from 2015-01-01 to 2017-03-31. With the provision of the user label generator, we encourage participants to generate training labels using data not included in our sample training labels.
+
+One important information in the data extraction process is the definition of membership expiration date. Suppose we have a sequence for a user with the tuple of (transaction date, membership expiration date, and is_cancel):
+
+(2017-01-01, 2017-02-28, false)
+
+(2017-02-25, 0217-03-15, false)
+
+(2017-04-30, 3017-05-20, false)
+
+(data used for demo only, not included in competition dataset)
+
+This user is included in the dataset since the expiration date falls within our time period. Since the subscription transaction is 30 days away from 2017-03-15, the previous expiration date, we will count this user as a churned user.
+
+Let's consider a more complex example derive the last one, suppose now a user has the following transaction sequence
+
+(2017-01-01, 2017-02-28, false)
+
+(2017-02-25, 2017-04-03, false)
+
+(2017-03-15, 2017-03-16, true)
+
+(2017-04-01, 3017-06-30, false)
+
+The above entries is quite typical for a user who changes his subscription plan. Entry 3 indicates that the membership expiration date is moved from 2017-04-03 back to 2017-03-16 due to the user making an active cancellation on the 15th. On April 1st, the user made a long term (two month subscription), which is 15 days after the "current" expiration date. So this user is not a churn user.
+
+Now let's consider the a sequence that indicate the user does not falls in our scope of prediction
+
+(2017-01-01, 2017-02-28, false)
+
+(2017-02-25, 2017-04-03, false)
+
+(2017-03-15, 2017-03-16, true)
+
+(2017-03-18, 2017-04-02, false)
+
+Note that even the 3rd entry has member ship expiration date falls in 2017-03-16, but the fourth entry extends the membership expiration date to 2017-04-02, not between 2017-03-01 and 2017-03-31, so we will not make a prediction for the user.
+
+
+# Data Preparation.
+
+First we need to prepare the data for analysis. 
+We convert the train.csv data to a data frame.
+
+
+```{R}
+library(data.table)
+require(plyr)
+library(dplyr)
+library(e1071)
+library(DT)
+
+basedir="/Users/David/Documents/cs/R/wsdm.kkbox.kaggle/full_data"
+
+sample_submission_zero=read.csv(paste(basedir, "sample_submission_zero.csv",sep="/"))
+sample_submission_v2=read.csv(paste(basedir, "sample_submission_v2.csv",sep="/"))
+
+#members=read.csv(paste(basedir, "members.csv",sep="/"))
+members_v3=read.csv(paste(basedir, "members_v3.csv",sep="/"))
+
+transactions=read.csv(paste(basedir, "transactions.csv",sep="/"))
+user_logs=read.csv(paste(basedir, "user_logs.csv",sep="/"))
+train=read.csv(paste(basedir, "train.csv",sep="/"))
+
+transactions_v2=read.csv(paste(basedir, "transactions_v2.csv",sep="/"))
+user_logs_v2=read.csv(paste(basedir, "user_logs_v2.csv",sep="/"))
+train_v2=read.csv(paste(basedir, "train_v2.csv",sep="/"))
+
+data_date=as.Date("02/28/2017"   ,"%m/%d/%Y")
+data_date_v2=as.Date("03/31/2017"   ,"%m/%d/%Y") 
+report_date=as.Date("11/13/2017"   ,"%m/%d/%Y") 
+
+members_v3$city=factor(ifelse(is.na(members_v3$city) , "unknown", members_v3$city))
+members_v3$bd_na=factor(ifelse(members_v3$bd < 1 | members_v3$bd > 130 | is.na(members_v3$bd), "unknown", "known"))
+members_v3$bd=ifelse(members_v3$bd < 1 | members_v3$bd > 130 | is.na(members_v3$bd), 0, members_v3$bd)
+
+#TODO: handle age. 
+members_v3$registered_via=factor(ifelse(is.na(members_v3$registered_via) , "unknown", members_v3$registered_via))  
+members_v3$registration_init_time=as.Date(as.character(members_v3$registration_init_time),"%Y%m%d")
+members_v3$gender=factor(ifelse(is.na(members_v3$gender), "unknown", members_v3$gender))
+
+members_v2=subset(members_v3,registration_init_time < data_date_v2)
+members_v2$member_duration=data_date_v2-members_v2$registration_init_time
+num_duration_v2=as.integer(members_v2$member_duration)
+members_v2$loyalty=ifelse(num_duration_v2 < 30, "short", "1month")
+members_v2$loyalty=ifelse(num_duration_v2 < 60, members_v2$loyalty, "2month")
+members_v2$loyalty=ifelse(num_duration_v2 < 90, members_v2$loyalty, "3month")
+members_v2$loyalty=ifelse(num_duration_v2 < 365, members_v2$loyalty, "long")
+members_v2$loyalty=ifelse(is.na(members_v2$loyalty), "unknown", members_v2$loyalty)
+members_v2$loyalty=factor(members_v2$loyalty)
+members_v2$member_duration=ifelse(is.na(members_v2$member_duration), 0, members_v2$member_duration)
+
+members=subset(members_v2,registration_init_time < data_date)
+members$member_duration=data_date_v2-members$registration_init_time
+num_duration=as.integer(members$member_duration)
+members$loyalty=ifelse(num_duration < 30, "short", "1month")
+members$loyalty=ifelse(num_duration < 60, members$loyalty, "2month")
+members$loyalty=ifelse(num_duration < 90, members$loyalty, "3month")
+members$loyalty=ifelse(num_duration < 365, members$loyalty, "long")
+members$loyalty=ifelse(is.na(members$loyalty), "unknown", members$loyalty)
+members$loyalty=factor(members$loyalty)
+members$member_duration=ifelse(is.na(members$member_duration), 0, members$member_duration)
+
+
+rm(members_v3)
+gc()
+
+
+transactions$payment_method_id=factor(ifelse(is.na(transactions$payment_method_id) , "0", transactions$payment_method_id)) 
+transactions$is_auto_renew=factor(ifelse(is.na(transactions$is_auto_renew) , 0, transactions$is_auto_renew))
+transactions$transaction_date=as.Date(as.character(transactions$transaction_date),"%Y%m%d")
+transactions$membership_expire_date=as.Date(as.character(transactions$membership_expire_date),"%Y%m%d")
+transactions$is_cancel=factor(ifelse(is.na(transactions$is_cancel) , 0, transactions$is_cancel))
+
+transactions$transaction_duration=transactions$membership_expire_date - transactions$transaction_date
+transactions$transaction_duration=ifelse(is.na(transactions$transaction_duration) , 0, transactions$transaction_duration)
+
+transactions$plan_list_price=factor(ifelse(is.na(transactions$plan_list_price), 0,transactions$plan_list_price))
+transactions$payment_plan_days=factor(ifelse(is.na(transactions$payment_plan_days), 0,transactions$payment_plan_days))
+
+transactions$is_paid_full=transactions$plan_list_price-transactions$actual_amount_paid
+transactions$is_paid_full=ifelse(transactions$is_paid_full==0, 1, 0)
+transactions$is_paid_full=factor(ifelse(is.na(transactions$is_paid_full), 0,transactions$is_paid_full))
+
+transactions$actual_amount_paid=ifelse(is.na(transactions$actual_amount_paid), 0,transactions$actual_amount_paid)
+
+
+transactions_summary = transactions %>% group_by(msno) %>% arrange(transaction_date)  %>% summarise(count_transactions=n(), payment_method_id = last(payment_method_id),   payment_plan_days = last(payment_plan_days) , plan_list_price = last(plan_list_price), total_actual_amount_paid = sum(actual_amount_paid), actual_amount_paid = last(actual_amount_paid), is_auto_renew = last(is_auto_renew), first_transaction_date = first(transaction_date), transaction_date = last(transaction_date), membership_expire_date = last(membership_expire_date), is_cancel = last(is_cancel), transaction_duration= last(transaction_duration), is_paid_full = last(is_paid_full))
+
+rm(transactions)
+gc()
+
+transactions_v2$payment_method_id=factor(ifelse(is.na(transactions_v2$payment_method_id) , "0", transactions_v2$payment_method_id)) 
+transactions_v2$is_auto_renew=factor(ifelse(is.na(transactions_v2$is_auto_renew) , 0, transactions_v2$is_auto_renew))
+
+transactions_v2$transaction_date=as.Date(as.character(transactions_v2$transaction_date),"%Y%m%d")
+transactions_v2$membership_expire_date=as.Date(as.character(transactions_v2$membership_expire_date),"%Y%m%d")
+transactions_v2$is_cancel=factor(ifelse(is.na(transactions_v2$is_cancel) , 0, transactions_v2$is_cancel))
+
+transactions_v2$transaction_duration=transactions_v2$membership_expire_date - transactions_v2$transaction_date
+transactions_v2$transaction_duration=ifelse(is.na(transactions_v2$transaction_duration) , 0, transactions_v2$transaction_duration)
+
+transactions_v2$plan_list_price=factor(ifelse(is.na(transactions_v2$plan_list_price), 0,transactions_v2$plan_list_price))
+transactions_v2$payment_plan_days=factor(ifelse(is.na(transactions_v2$payment_plan_days), 0,transactions_v2$payment_plan_days))
+
+transactions_v2$is_paid_full=transactions_v2$plan_list_price-transactions_v2$actual_amount_paid
+transactions_v2$is_paid_full=ifelse(transactions_v2$is_paid_full==0, 1, 0)
+transactions_v2$is_paid_full=factor(ifelse(is.na(transactions_v2$is_paid_full), 0,transactions_v2$is_paid_full))
+
+transactions_v2$actual_amount_paid=ifelse(is.na(transactions_v2$actual_amount_paid), 0,transactions_v2$actual_amount_paid)
+
+transactions_v2_summary = transactions_v2 %>% group_by(msno) %>% arrange(transaction_date)  %>% summarise(count_transactions=n(), payment_method_id = last(payment_method_id),   payment_plan_days = last(payment_plan_days) , plan_list_price = last(plan_list_price), total_actual_amount_paid = sum(actual_amount_paid), actual_amount_paid = last(actual_amount_paid), is_auto_renew = last(is_auto_renew), first_transaction_date = first(transaction_date), transaction_date = last(transaction_date), membership_expire_date = last(membership_expire_date), is_cancel = last(is_cancel),transaction_duration= last(transaction_duration), is_paid_full = last(is_paid_full))
+
+rm(transactions_v2)
+gc()
+
+user_logs$date=as.Date(as.character(user_logs$date),"%Y%m%d")
+user_logs_week_begin_date=data_date-7
+user_logs_month_begin_date=data_date-30 
+user_logs_year_begin_date=data_date-365 
+user_logs_last_year = subset(user_logs,date > user_logs_year_begin_date)
+user_logs_last_month = subset(user_logs_last_year,date > user_logs_month_begin_date)
+user_logs_last_week = subset(user_logs_last_month,date > user_logs_week_begin_date)
+
+rm(user_logs)
+gc()
+
+user_logs_last_year_summary = user_logs_last_year %>% group_by(msno) %>% 
+  summarise(year_count_days=n(), yearly_num_25 = sum(num_25), yearly_num_50 = sum(num_50) ,
+            yearly_num_75 = sum(num_75),yearly_num_985 = sum(num_985),
+            yearly_num_100 = sum(num_100),yearly_num_unq = sum(num_unq),
+            yearly_total_secs = sum(total_secs))
+user_logs_last_month_summary = user_logs_last_month %>% group_by(msno) %>% 
+  summarise(month_count_days=n(),monthly_num_25 = sum(num_25), monthly_num_50 = sum(num_50) ,
+            monthly_num_75 = sum(num_75),monthly_num_985 = sum(num_985),
+            monthly_num_100 = sum(num_100),monthly_num_unq = sum(num_unq),
+            monthly_total_secs = sum(total_secs))
+user_logs_last_week_summary = user_logs_last_week %>% group_by(msno) %>% 
+  summarise(week_count_days=n(),weekly_num_25 = sum(num_25), weekly_num_50 = sum(num_50) ,
+            weekly_num_75 = sum(num_75),weekly_num_985 = sum(num_985),
+            weekly_num_100 = sum(num_100),weekly_num_unq = sum(num_unq),
+            weekly_total_secs = sum(total_secs))
+
+rm(user_logs_last_year,user_logs_last_month,user_logs_last_week)
+gc()
+
+user_logs_summary= merge(user_logs_last_year_summary, user_logs_last_month_summary,by.x="msno",  by.y="msno", all.x=TRUE)
+user_logs_summary=merge(user_logs_summary, user_logs_last_week_summary,by.x="msno",  by.y="msno" , all.x=TRUE)
+
+rm(user_logs_last_year_summary,user_logs_last_month_summary,user_logs_last_week_summary)
+gc()
+
+member_df=merge(train, members, by.x="msno", by.y="msno", all.x=TRUE ,all.y=FALSE)
+member_df=merge(member_df, transactions_summary,by.x="msno", by.y="msno", all.x=TRUE, all.y=FALSE )
+member_df=merge(member_df, user_logs_summary,by.x="msno", by.y="msno", all.x=TRUE ,all.y=FALSE)
+
+rm(train,members,transactions_summary,user_logs_summary)
+gc()
+
+member_df$yearly_na=factor(ifelse(is.na(member_df$year_count_days)  , 0,1))
+member_df$monthly_na=factor(ifelse(is.na(member_df$month_count_days) ,0,1))
+member_df$weekly_na=factor(ifelse(is.na(member_df$week_count_days)  , 0,1))
+
+member_df$count_transactions=ifelse(is.na(member_df$count_transactions)  , 0,member_df$count_transactions)
+member_df$total_actual_amount_paid=ifelse(is.na(member_df$total_actual_amount_paid)  , 0,member_df$total_actual_amount_paid)
+
+member_df[,c("transaction_date","membership_expire_date","registration_init_time","first_transaction_date")] <- list(NULL)
+
+saveRDS(member_df,file="member_df.rds")
+write.csv(member_df,'member_df.csv')
+
+
+user_logs_v2$date=as.Date(as.character(user_logs_v2$date),"%Y%m%d")
+user_logs_v2_week_begin_date=data_date_v2-7
+user_logs_v2_month_begin_date=data_date_v2-30 
+user_logs_v2_year_begin_date=data_date_v2-365 
+
+user_logs_v2_last_year = subset(user_logs_v2,date > user_logs_v2_year_begin_date)
+user_logs_v2_last_month = subset(user_logs_v2_last_year,date > user_logs_v2_month_begin_date)
+user_logs_v2_last_week = subset(user_logs_v2_last_month,date > user_logs_v2_week_begin_date)
+
+
+
+user_logs_v2_last_year_summary = user_logs_v2_last_year %>% group_by(msno) %>% 
+  summarise(year_count_days=n(), yearly_num_25 = sum(num_25), yearly_num_50 = sum(num_50) ,
+            yearly_num_75 = sum(num_75),yearly_num_985 = sum(num_985),
+            yearly_num_100 = sum(num_100),yearly_num_unq = sum(num_unq),
+            yearly_total_secs = sum(total_secs))
+user_logs_v2_last_month_summary = user_logs_v2_last_month %>% group_by(msno) %>% 
+  summarise(month_count_days=n(),monthly_num_25 = sum(num_25), monthly_num_50 = sum(num_50) ,
+            monthly_num_75 = sum(num_75),monthly_num_985 = sum(num_985),
+            monthly_num_100 = sum(num_100),monthly_num_unq = sum(num_unq),
+            monthly_total_secs = sum(total_secs))
+user_logs_v2_last_week_summary = user_logs_v2_last_week %>% group_by(msno) %>% 
+  summarise(week_count_days=n(),weekly_num_25 = sum(num_25), weekly_num_50 = sum(num_50) ,
+            weekly_num_75 = sum(num_75),weekly_num_985 = sum(num_985),
+            weekly_num_100 = sum(num_100),weekly_num_unq = sum(num_unq),
+            weekly_total_secs = sum(total_secs))
+
+rm(user_logs_v2_last_year,user_logs_v2_last_month,user_logs_v2_last_week)
+gc()
+
+user_logs_v2_summary= merge(user_logs_v2_last_year_summary, user_logs_v2_last_month_summary,by.x="msno",  by.y="msno", all.x=TRUE)
+user_logs_v2_summary=merge(user_logs_v2_summary, user_logs_v2_last_week_summary,by.x="msno",  by.y="msno" , all.x=TRUE)
+
+rm(user_logs_v2_last_year_summary,user_logs_v2_last_month_summary,user_logs_v2_last_week_summary)
+gc()
+
+
+member_df_v2=merge(train_v2, members_v2, by.x="msno", by.y="msno", all.x=TRUE )
+member_df_v2=merge(member_df_v2, transactions_v2_summary,by.x="msno", by.y="msno", all.x=TRUE )
+member_df_v2=merge(member_df_v2, user_logs_v2_summary,by.x="msno", by.y="msno", all.x=TRUE )
+
+rm(train_v2,members_v2,transactions_v2_summary,user_logs_v2_summary)
+gc()
+
+member_df_v2$yearly_na=factor(ifelse(is.na(member_df_v2$year_count_days)  , 0,1))
+member_df_v2$monthly_na=factor(ifelse(is.na(member_df_v2$month_count_days) , 0,1))
+member_df_v2$weekly_na=factor(ifelse(is.na(member_df_v2$week_count_days)  ,  0,1))
+member_df_v2$total_actual_amount_paid=ifelse(is.na(member_df_v2$total_actual_amount_paid)  , 0,member_df_v2$total_actual_amount_paid)
+
+member_df_v2[,c("transaction_date","membership_expire_date","registration_init_time","first_transaction_date")] <- list(NULL)
+
+saveRDS(member_df_v2,file="member_df_v2.rds")
+write.csv(member_df_v2,'member_df_v2.csv')
+
+#save.image()
+
+```
+reconstruct the data frame
+
+```{R}
+
+member_df_backup=readRDS("member_df.rds")
+member_df_v2_backup=readRDS("member_df_v2.rds")
+
+member_df=member_df_backup
+member_df_v2=member_df_v2_backup
+
+
+titles=c("year_count_days","yearly_num_25","yearly_num_50","yearly_num_75","yearly_num_985","yearly_num_100",  "yearly_num_unq","yearly_total_secs","month_count_days","monthly_num_25","monthly_num_50","monthly_num_75",     "monthly_num_985","monthly_num_100","monthly_num_unq","monthly_total_secs","week_count_days","weekly_num_25",  "weekly_num_50","weekly_num_75","weekly_num_985", "weekly_num_100","weekly_num_unq","weekly_total_secs")
+
+
+
+remove_fields=c("yearly_num_50","yearly_num_75","yearly_num_985","monthly_num_50","monthly_num_75",     "monthly_num_985","weekly_num_50","weekly_num_75","weekly_num_985")
+preserve_fields=c("year_count_days","yearly_num_25","yearly_num_100",  "yearly_num_unq","yearly_total_secs","month_count_days","monthly_num_25","monthly_num_100","monthly_num_unq","monthly_total_secs","week_count_days","weekly_num_25", "weekly_num_100","weekly_num_unq","weekly_total_secs")
+
+use_fields=c("year_count_days","monthly_num_25","monthly_num_100","monthly_total_secs")
+
+user_logs_summary=member_df[,titles]
+member_df[,titles]<- list(NULL)
+member_df$member_duration=as.integer(member_df$member_duration)
+member_df$transaction_duration=as.integer(member_df$transaction_duration)
+member_df[,use_fields]=user_logs_summary[,use_fields]
+
+user_logs_v2_summary=member_df_v2[,titles]
+member_df_v2[,titles]<- list(NULL)
+member_df_v2$member_duration=as.integer(member_df_v2$member_duration)
+member_df_v2$transaction_duration=as.integer(member_df_v2$transaction_duration)
+
+member_df_v2[,use_fields]=user_logs_v2_summary[,use_fields]
+
+
+
+
+for (title in use_fields)
+{
+  member_df[,title]= ifelse(is.na(member_df[,title])  , 0,member_df[,title])
+  gc()
+}
+
+for (title in use_fields)
+{
+   member_df_v2[,title]=ifelse(is.na(member_df_v2[,title])  , 0,member_df_v2[,title])
+   gc()
+}
+
+idx=which(is.na(member_df$city))
+#check null element in member_df
+for (title in names(member_df))
+{
+  idx=which(is.na(member_df[,title]))
+  if (length(idx) > 0)
+    print(paste(title))
+}
+
+for (title in names(member_df_v2))
+{
+  idx=which(is.na(member_df_v2[,title]))
+  if (length(idx) > 0)
+    print(title)
+}
+na_factor_fields=c( "city","gender","registered_via","bd_na","loyalty")
+
+for (title in na_factor_fields)
+{
+  member_df[,title]=ifelse(is.na(member_df[,title]), "unknown", member_df[,title])
+  member_df_v2[,title]=ifelse(is.na(member_df_v2[,title]), "unknown", member_df_v2[,title])
+}
+
+na_numeric_factor_fields=c("payment_method_id","is_auto_renew", "is_cancel", "is_paid_full")
+for (title in na_numeric_factor_fields)
+{
+  member_df[,title]=ifelse(is.na(member_df[,title]), 0, member_df[,title])
+  member_df_v2[,title]=ifelse(is.na(member_df_v2[,title]), 0, member_df_v2[,title])
+}
+
+na_numeric_fields=c("bd","member_duration","count_transactions","payment_plan_days","plan_list_price","actual_amount_paid","transaction_duration","year_count_days","monthly_num_25","monthly_num_100")
+for (title in na_numeric_fields)
+{
+  member_df[,title]=ifelse(is.na(member_df[,title]), 0, member_df[,title])
+  member_df_v2[,title]=ifelse(is.na(member_df_v2[,title]), 0, member_df_v2[,title])
+}
+
+dependent_fields=names(member_df)
+dependent_fields=dependent_fields[-1]
+dependent_fields=dependent_fields[-1]
+dependent_fields_length=length(names(member_df))
+
+for (i in c(1:26)) print(levels(member_df[,i]))
+for (i in c(1:26)) print(levels(member_df_v2[,i]))
+
+
+```
+
+
+
+
+# LINEAR REGRESSION.
+
+We could also compute the linear regression between is_churn v/s 
+
+variable 'payment_method_id' is not a factorvariable 'is_auto_renew' is not a factorvariable 'is_cancel' is not a factorvariable 'is_paid_full' is not a factorError: variables ‘payment_method_id’, ‘is_auto_renew’, ‘is_cancel’, ‘is_paid_full’ were specified with different types from the fit
+
+
+```{R}
+########linear regression
+#c("year_count_days","monthly_num_25","monthly_num_100","monthly_total_secs")
+linearRegressionModel=lm(is_churn~city+bd+gender+registered_via+bd_na+member_duration+loyalty+count_transactions+payment_method_id+payment_plan_days+plan_list_price+total_actual_amount_paid+actual_amount_paid+is_auto_renew+is_cancel+transaction_duration+is_paid_full+yearly_na+monthly_na+weekly_na+year_count_days+monthly_num_25+monthly_num_100+monthly_total_secs,data=member_df_v2)
+summary(linearRegressionModel)
+```
+
+Again calculating Confusion Matrix. 
+```{R}
+
+linearRegressionPrediction=predict(linearRegressionModel, newdata=member_df)
+linearRegressionPrediction
+predictedResult= ifelse(linearRegressionPrediction< 0.5, 0, 1)  
+predictedResult=ifelse(is.na(predictedResult), 0, predictedResult)
+linearRegressionConfustionMatrix = table(member_df$is_churn, predictedResult)
+linearRegressionConfustionMatrix
+chisq.test(linearRegressionConfustionMatrix)
+accuracy=sum(diag(linearRegressionConfustionMatrix))/sum(linearRegressionConfustionMatrix)
+accuracy
+```
+
+
+# lda 
+```{r}
+
+library(MASS)
+daModel = lda(member_df_v2$is_churn~city+bd+gender+registered_via+bd_na+member_duration+loyalty+count_transactions+payment_method_id+payment_plan_days+plan_list_price+total_actual_amount_paid+actual_amount_paid+is_auto_renew+is_cancel+transaction_duration+is_paid_full+yearly_na+monthly_na+weekly_na+year_count_days+monthly_num_25+monthly_num_100+monthly_total_secs,data=member_df_v2[,dependent_fields])
+daModel
+print(names(daModel))
+daPrediction=predict(daModel, newdata=data.frame(member_df[,dependent_fields]))$class
+length(daPrediction)                     
+daPrediction
+daConfustionMatrix = table(member_df$is_churn, daPrediction)
+daConfustionMatrix
+chisq.test(daConfustionMatrix)
+accuracy=sum(diag(daConfustionMatrix))/sum(daConfustionMatrix)
+accuracy
+
+
+```
+
+# Regression Trees
+
+
+```{R}
+anovaModel = rpart(is_churn~city+bd+gender+registered_via+bd_na+member_duration+loyalty+count_transactions+payment_method_id+payment_plan_days+plan_list_price+total_actual_amount_paid+actual_amount_paid+is_auto_renew+is_cancel+transaction_duration+is_paid_full+yearly_na+monthly_na+weekly_na+year_count_days+monthly_num_25+monthly_num_100+monthly_total_secs, method="anova", data=member_df_v2)
+printcp(anovaModel)
+anovaPrediction=predict(anovaModel,  newdata=data.frame(member_df[,dependent_fields]))
+length(anovaPrediction)                     
+anovaPrediction
+anovaConfustionMatrix = table(member_df$is_churn, as.integer( round(anovaPrediction)))
+anovaConfustionMatrix
+chisq.test(anovaConfustionMatrix)
+accuracy=sum(diag(anovaConfustionMatrix))/sum(anovaConfustionMatrix)
+accuracy
+```
+
+# Classification Trees
+
+```{R}
+library(rpart)
+rpartModel = rpart(is_churn~city+bd+gender+registered_via+bd_na+member_duration+loyalty+count_transactions+payment_method_id+payment_plan_days+plan_list_price+total_actual_amount_paid+actual_amount_paid+is_auto_renew+is_cancel+transaction_duration+is_paid_full+yearly_na+monthly_na+weekly_na+year_count_days+monthly_num_25+monthly_num_100+monthly_total_secs, method="class", data=member_df_v2)
+printcp(rpartModel)
+rpartPrediction=predict(rpartModel, type="class", newdata=data.frame(member_df[,dependent_fields]))
+length(rpartPrediction)                     
+rpartPrediction
+rpartConfustionMatrix = table(member_df$is_churn, rpartPrediction)
+rpartConfustionMatrix
+chisq.test(rpartConfustionMatrix)
+accuracy=sum(diag(rpartConfustionMatrix))/sum(rpartConfustionMatrix)
+accuracy
+```
+
+# BOOSTING THE RESULTS.
+
+
+
+```{R}
+
+library(xgboost)
+
+objectives=c("binary:logitraw","rank:pairwise")
+for (aObjective in objectives)
+{
+  print(aObjective)
+  boostModel1 = xgboost(data=as.matrix(member_df_v2[,dependent_fields]),label=member_df_v2$is_churn, objective = aObjective, nrounds=10)
+  print(names(boostModel1))
+  boostPrediction1 = predict(boostModel1,as.matrix(member_df[,dependent_fields]))
+  boostConfusionMatrix1 = table(member_df$is_churn,ifelse(boostPrediction1<=0,0,1))
+  print(boostConfusionMatrix1)
+  print(chisq.test(boostConfusionMatrix1))
+  accuracy=sum(diag(boostConfusionMatrix1))/sum(boostConfusionMatrix1)
+  print(accuracy)
+}
+
+```
+
+# Support Vector Machines: svm
+
+```{r}
+library(e1071)
+svmModel=svm(member_df_v2[,dependent_fields], member_df_v2$is_churn)
+summary(svmModel)
+svmPrediction=predict(svmModel, as.matrix(member_df[,dependent_fields]))
+head(svmPrediction)
+
+as.integer( round(svmPrediction))
+
+svmConfustionMatrix = table(member_df$is_churn, as.integer( round(svmPrediction)))
+svmConfustionMatrix
+chisq.test(svmConfustionMatrix)
+accuracy=sum(diag(svmConfustionMatrix))/sum(svmConfustionMatrix)
+accuracy
+```
+
+
+# lasso regression.
+```{r}
+library(glmnet)
+library(dplyr)
+lassoModel2 = glmnet(x = as.matrix(member_df_v2[,dependent_fields]), y = member_df_v2$is_churn, family = 'binomial', alpha = 1)
+print(lassoModel2)
+#plot(lassoModel2)
+#b = coef(lassoModel2)[,2]   #Choose the best case 
+#print(b)
+lassoPrediction2 = predict(lassoModel2, newx=as.matrix(member_df[,dependent_fields]), type = 'response')
+#print(dim(lassoPrediction2))
+#print(lassoPrediction2[,2])
+#print(glmnet:::auc(member_df$is_churn, lassoPrediction2[,2]))
+#print(table(member_df$is_churn,round(lassoPrediction2[,2],0)))   
+#rounding needed to make 0,1
+head(lassoPrediction2)
+tail(lassoPrediction2)
+lassoConfustionMatrix2 = table(testDF$is_churn, lassoPrediction2[,2])
+lassoConfustionMatrix2
+chisq.test(lassoConfustionMatrix2)
+accuracy=sum(diag(lassoConfustionMatrix2))/sum(lassoConfustionMatrix2)
+accuracy
+```
+
+
+# cox family prediction
+```{r}
+
+coxModel = glmnet(x = as.matrix(member_df_v2[,dependent_fields]), y = member_df_v2$is_churn, family = 'binomial', alpha = 1)
+#print(names(coxModel))
+#print(coxModel)
+#plot(coxModel)
+#b = coef(coxModel)[,2]   #Choose the best case 
+#print(b)
+coxPrediction = predict(coxModel, newx=as.matrix(member_df[,dependent_fields]), type = 'response')
+#print(dim(coxPrediction))
+#print(coxPrediction[,2])
+#print(glmnet:::auc(member_df$is_churn, coxPrediction[,2]))
+#print(table(member_df$is_churn,round(coxPrediction[,2],0)))   
+#rounding needed to make 0,1
+head(coxPrediction)
+tail(coxPrediction)
+lassoConfustionMatrix2 = table(testDF$is_churn, coxPrediction[,2])
+lassoConfustionMatrix2
+chisq.test(lassoConfustionMatrix2)
+accuracy=sum(diag(lassoConfustionMatrix2))/sum(lassoConfustionMatrix2)
+accuracy
+```
+
+# knn
+```{R}
+#"multi:softmax","multi:softprob",
+library(class)
+knnPrediction=knn(member_df_v2[,dependent_fields], member_df_v2[,dependent_fields], member_df_v2$is_churn, k = 3, prob = FALSE, use.all = TRUE)
+knnPrediction
+knnConfustionMatrix = table(member_df$is_churn, knnPrediction)
+knnConfustionMatrix
+chisq.test(knnConfustionMatrix)
+accuracy=sum(diag(knnConfustionMatrix))/sum(knnConfustionMatrix)
+accuracy
+```
+
+
+
+# Random Forest
+```{R}
+
+library(randomForest)
+
+rfModel = randomForest(data.frame(member_df_v2[,dependent_fields]), member_df_v2$is_churn)
+rfPrediction=predict(rfModel,  newdata=data.frame(member_df[,dependent_fields]))
+length(rfPrediction)                     
+rfPrediction
+rfConfustionMatrix = table(member_df$is_churn, as.integer( round(rfPrediction)))
+rfConfustionMatrix
+chisq.test(rfConfustionMatrix)
+accuracy=sum(diag(rfConfustionMatrix))/sum(rfConfustionMatrix)
+accuracy
+```
+
+# C4.5 Classifier
+
+```{R}
+library(RWeka)
+is_churnCategory=factor(member_df_v2$is_churn,levels = c(0,1),labels = c("0","1"))
+c45Model = J48(is_churnCategory~city+bd+gender+registered_via+bd_na+member_duration+loyalty+count_transactions+payment_method_id+payment_plan_days+plan_list_price+total_actual_amount_paid+actual_amount_paid+is_auto_renew+is_cancel+transaction_duration+is_paid_full+yearly_na+monthly_na+weekly_na+year_count_days+monthly_num_25+monthly_num_100+monthly_total_secs,data=member_df_v2[,dependent_fields])
+c45Model
+print(names(c45Model))
+c45Prediction=predict(c45Model, newdata=data.frame(member_df[,dependent_fields]))
+length(c45Prediction)                     
+c45Prediction
+c45ConfustionMatrix = table(member_df$is_churn, as.integer(c45Prediction))
+c45ConfustionMatrix
+chisq.test(c45ConfustionMatrix)
+accuracy=sum(diag(c45ConfustionMatrix))/sum(c45ConfustionMatrix)
+accuracy
+```
+
+```{R}
+#xgboost, 5 versions total
+library(xgboost)
+objectives=c("reg:linear","reg:logistic","binary:logistic")
+
+#xgboost doesn't support factor, we need to convert them back to numeric to work. 
+titles=c("city","bd_na","registered_via","gender","loyalty","payment_method_id","is_paid_full","is_auto_renew","is_cancel", "yearly_na","monthly_na","weekly_na")
+for (title in titles)
+  member_df[title]=as.numeric(member_df[title])
+
+
+for (aObjective in objectives)
+{
+  print(aObjective)
+  boostModel1 = xgboost(data=as.matrix(member_df[,dependent_fields]),label=member_df$is_churn, objective = aObjective, nrounds=10)
+  print(names(boostModel1))
+  boostPrediction1 = predict(boostModel1,as.matrix(member_df[,dependent_fields]))
+  #print(head(boostPrediction1,50))
+  boostConfusionMatrix1 = table(member_df$is_churn,as.integer( round(boostPrediction1)))
+  print(boostConfusionMatrix1)
+  print(chisq.test(boostConfusionMatrix1))
+  accuracy=sum(diag(boostConfusionMatrix1))/sum(boostConfusionMatrix1)
+  print(accuracy)
+}
+```
+
+
+# NAIVE BAYES CLASSIFIER.
+
+We use BAYES classifier first obtain the predictions.
+
+Using the training data set we first obtain the model. 
+```{R}
+####NAIVE BAYES
+library(e1071)
+bayesModel = naiveBayes(member_df[,dependent_fields],member_df[,2])
+summary(bayesModel)
+```
+We then use the test data set to predict the likelyhood of survival for passengers.
+```{R}
+#options(error=recover)
+bayesPrediction=predict(bayesModel, member_df_v2[,dependent_fields],type="raw")
+head(bayesPrediction)
+tail(bayesPrediction)
+```
+
+Validating the effectiveness of our prediction by obtaining the confusion matrix and using chisquare test to find out if the prediction was statistically significant. 
+
+```{R}
+bayesConfustionMatrix = table(member_df$is_churn, bayesPrediction[,2] >= 0.5)
+bayesConfustionMatrix
+BayesChiSq = chisq.test(bayesConfustionMatrix)
+```
+Also computing the accuracy of the predictions. 
+
+```{R}
+BayesAccuracy=sum(diag(bayesConfustionMatrix))/sum(bayesConfustionMatrix)
+BayesAccuracy
+```
+
+# Conclusion
+
+We used the variable column (3:44) as the variables and Column 2 (is_churn) as the outcome. The conditional probability is used to predict survival probability.
+
+
+From these results we conclude that linear regression, lda, and COX predication model work the best by achieving highest accuracy.
